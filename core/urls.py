@@ -13,7 +13,8 @@ from .views import (
     CheckoutView,
     CustomerOrderView,
     VendorOrderView,
-    CategoryViewSet
+    CategoryViewSet,
+    ProductSalesSummaryExportView
 )
 
 router = DefaultRouter()
@@ -42,4 +43,5 @@ urlpatterns = [
     # Orders
     path('orders/', CustomerOrderView.as_view(), name='customer-orders'),
     path('vendor/orders/', VendorOrderView.as_view(), name='vendor-orders'),
+    path('vendor/download-report/', ProductSalesSummaryExportView.as_view(), name='vendor-report'),
 ]

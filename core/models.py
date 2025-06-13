@@ -8,7 +8,7 @@ class User(AbstractUser):
     ('vendor', 'Vendor'),
     ('customer', 'Customer'),
     )
-    
+
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
 
     def is_vendor(self):
@@ -20,6 +20,7 @@ def is_customer(self):
         return f"{self.username} ({self.get_role_display()})"
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -31,6 +32,7 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)  # new field
     image = models.ImageField(upload_to='products/', blank=True, null=True)

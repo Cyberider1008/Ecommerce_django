@@ -35,7 +35,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'image', 'vendor','stock']
+        fields = ['id', 'name', 'description', 'price', 'image', 'vendor','stock', "category", 'is_active', 'created_at']
 
 
 # Cart Item Serializer
