@@ -91,12 +91,6 @@ class CartItemView(APIView):
 # Checkout API
 class CheckoutView(APIView):
     permission_classes = [IsAuthenticated]
-from django.apps import AppConfig
-
-
-class CoreConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core'
 
     def post(self, request):
         cart_items = CartItem.objects.filter(customer=request.user)
@@ -122,7 +116,6 @@ class CustomerOrderView(generics.ListAPIView):
     def get_queryset(self):
         return Order.objects.filter(customer=self.request.user)
 
-
 class VendorOrderView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
@@ -130,4 +123,4 @@ class VendorOrderView(generics.ListAPIView):
     def get_queryset(self):
         vendor = self.request.user
         order_ids = OrderItem.objects.filter(product__vendor=vendor).values_list('order_id', flat=True)
-        return Order.objects.filter(id__in=order_ids)
+        return Order.objects.filter(id__in=order_ids).prefetch_related('items', 'items__product')

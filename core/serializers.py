@@ -35,12 +35,13 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'image', 'vendor']
+        fields = ['id', 'name', 'description', 'price', 'image', 'vendor','stock']
 
 
 # Cart Item Serializer
 class CartItemSerializer(serializers.ModelSerializer):
     product_detail = ProductSerializer(source='product', read_only=True)
+    product = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = CartItem
@@ -50,16 +51,28 @@ class CartItemSerializer(serializers.ModelSerializer):
 # Order Item Serializer (nested inside Order)
 class OrderItemSerializer(serializers.ModelSerializer):
     product_detail = ProductSerializer(source='product', read_only=True)
+    subtotal = serializers.SerializerMethodField()
+    product = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'quantity', 'product_detail']
+        fields = ['id', 'product', 'quantity', 'product_detail','subtotal']
+
+    def get_subtotal(self, obj):
+        return float(obj.product.price) * obj.quantity
 
 
 # Order Serializer
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    total_amount = serializers.SerializerMethodField()
+    customer = serializers.StringRelatedField(source='customer.username', read_only=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'ordered_at', 'is_paid', 'items']
+        fields = ['id', 'customer', 'ordered_at', 'is_paid', 'items','total_amount']
+        
+    def get_total_amount(self, obj):
+        return sum([
+            item.product.price * item.quantity for item in obj.items.all()
+        ])

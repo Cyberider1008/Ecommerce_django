@@ -4,18 +4,20 @@ from django.utils.translation import gettext_lazy as _
 
 # Custom User with roles
 class User(AbstractUser):
-    class Role(models.TextChoices):
-        VENDOR = 'vendor', _('Vendor')
-        CUSTOMER = 'customer', _('Customer')
-
-    role = models.CharField(max_length=10, choices=Role.choices)
+    ROLE_CHOICES = (
+    ('vendor', 'Vendor'),
+    ('customer', 'Customer'),
+    )
+    
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
 
     def is_vendor(self):
-        return self.role == self.Role.VENDOR
+        return self.role == 'vendor'
 
-    def is_customer(self):
-        return self.role == self.Role.CUSTOMER
-    
+def is_customer(self):
+    return self.role == 'customer'
+    def __str__(self):
+        return f"{self.username} ({self.get_role_display()})"
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
