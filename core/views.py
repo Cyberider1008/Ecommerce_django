@@ -1,13 +1,15 @@
+import os
+from io import BytesIO
+import pandas as pd
+
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated,SAFE_METHODS, BasePermission
-from django.contrib.auth import get_user_model
 
-import pandas as pd
-from io import BytesIO
-import os
+from django.contrib.auth import get_user_model
 from django.conf import settings
+
 
 from .models import Product, CartItem, Order, OrderItem, Category
 from .serializers import (
@@ -30,17 +32,18 @@ class IsAdminOrReadOnly(BasePermission):
 class IsAdminOrVendor(BasePermission):
     """
     Allow only Admin and Vendor to add or modify products.
-    Everyone can read (GET).
+    Everyone (authenticated or not) can read (GET, HEAD, OPTIONS).
     """
 
     def has_permission(self, request, view):
-        # Allow all safe methods (GET, HEAD, OPTIONS)
+        # Allow all safe methods (e.g. GET, HEAD, OPTIONS)
         if request.method in SAFE_METHODS:
             return True
 
-        # Check if user is authenticated and is admin or vendor
-        return request.user.is_authenticated and (
-            request.user.is_staff or request.user.role == 'vendor'
+        # Allow only if user is authenticated and is admin or vendor
+        return (
+            request.user.is_authenticated and
+            (request.user.is_superuser or request.user.role == 'vendor')
         )
 
 
@@ -53,15 +56,17 @@ class IsCustomer(BasePermission):
         if request.method in SAFE_METHODS:
             return request.user.is_authenticated  # any authenticated user can read
         return request.user.is_authenticated and request.user.role == 'customer'
-        
-
 
 
 # Register API
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
+class RegisterView(APIView):
+    
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Authenticated User Info
 class UserDetailView(APIView):
@@ -70,9 +75,6 @@ class UserDetailView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
-
-
-
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -160,22 +162,30 @@ class CheckoutView(APIView):
 
 
 # Orders
-class CustomerOrderView(generics.ListAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [IsCustomer]
+class CustomerOrderView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomer]
 
-    def get_queryset(self):
-        return Order.objects.filter(customer=self.request.user)
+    def get(self, request):
+        orders = Order.objects.filter(customer=request.user)
+        if not orders.exists():
+            return Response({"detail": "No orders found."}, status=status.HTTP_204_NO_CONTENT)
 
-class VendorOrderView(generics.ListAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [IsAdminOrVendor]
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get_queryset(self):
-        vendor = self.request.user
+class VendorOrderView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrVendor]
+
+    def get(self, request):
+        vendor = request.user
         order_ids = OrderItem.objects.filter(product__vendor=vendor).values_list('order_id', flat=True)
-        return Order.objects.filter(id__in=order_ids).prefetch_related('items', 'items__product')
-    
+        orders = Order.objects.filter(id__in=order_ids).prefetch_related('items', 'items__product')
+        
+        if not orders.exists():
+            return Response({"detail": "No orders found."}, status=status.HTTP_204_NO_CONTENT)
+
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)  
 
 class ProductSalesSummaryExportView(APIView):
     permission_classes = [IsAuthenticated]
