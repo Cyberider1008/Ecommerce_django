@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
+from django_countries.fields import CountryField
 
+from datetime import timedelta
 # Custom User with roles
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -16,8 +18,8 @@ class User(AbstractUser):
 
 def is_customer(self):
     return self.role == 'customer'
-    def __str__(self):
-        return f"{self.username} ({self.get_role_display()})"
+   
+    
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
@@ -73,3 +75,21 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
+
+# Billing Address Model
+class BillingAddress(models.Model):
+   
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='billing_addresses')
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    zip_code = models.CharField(max_length=20)
+    country = CountryField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} - {self.city}"

@@ -14,12 +14,16 @@ from .views import (
     CustomerOrderView,
     VendorOrderView,
     CategoryViewSet,
-    ProductSalesSummaryExportView
+    ProductSalesSummaryExportView,
+    BillingAddressViewSet,
+    CountryListAPIView
 )
 
 router = DefaultRouter()
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'billing-addresses', BillingAddressViewSet, basename='billing-address')
+
 
 urlpatterns = [
     # Auth & User
@@ -44,4 +48,5 @@ urlpatterns = [
     path('orders/', CustomerOrderView.as_view(), name='customer-orders'),
     path('vendor/orders/', VendorOrderView.as_view(), name='vendor-orders'),
     path('vendor/download-report/', ProductSalesSummaryExportView.as_view(), name='vendor-report'),
+    path('countries/', CountryListAPIView.as_view(), name='country-list'),
 ]

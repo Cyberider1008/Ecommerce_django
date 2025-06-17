@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Welcome Ecommerce</title>
+
+    <!--[if !mso]><!-->
+    <style>
+      /* Mobile tweaks – most desktop clients ignore media queries, mobile honours them */
+      @media screen and (max-width: 600px) {
+        .container { width: 100% !important; padding: 16px !important; }
+        .btn       { display: block !important; width: 100% !important; }
+        h1         { font-size: 22px !important; line-height: 28px !important; }
+        p          { font-size: 15px !important; line-height: 22px !important; }
+      }
+    </style>
+    <!--<![endif]-->
+  </head>
+
+  <body style="margin:0;background:#f5f6f8;font-family:Arial,Helvetica,sans-serif;">
+    <!-- Wrapper -->
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center" style="padding:24px 0;">
+          <!-- Container -->
+          <table class="container"
+                 width="600"
+                 cellpadding="0"
+                 cellspacing="0"
+                 role="presentation"
+                 style="width:600px;max-width:600px;background:#ffffff;
+                        border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);">
+           
+            <!-- Hero -->
+            <tr>
+              <td align="center" style="padding:0 32px;">
+                <h1 style="margin:0 0 16px;font-size:26px;line-height:32px;color:#333333;">
+                  Welcome, {{ username|truncatechars:20 }}!
+                </h1>
+                <p style="margin:0 0 24px;font-size:16px;line-height:24px;color:#555555;">
+                  Your account (<strong>{{ role }}</strong>) has been created successfully.
+                </p>
+                <p style="margin:0 0 24px;font-size:16px;line-height:24px;color:#555555;">
+                  You can now log in to your account and start shopping with us.
+                </p>
+                <p style="margin:0 0 24px;font-size:16px;line-height:24px;color:#555555;">
+                  If you have any questions, feel free to contact our support team.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Spacer -->
+            <tr><td style="height:32px;"></td></tr>
+
+            <!-- Footer -->
+            <tr>
+              <td align="center" style="padding:0 24px 24px;">
+                <p style="margin:0;font-size:12px;line-height:18px;color:#999999;">
+                  &copy; My Ecommerce Website.
+                </p>
+              </td>
+            </tr>
+
+          </table><!-- /container -->
+        </td>
+      </tr>
+    </table><!-- /wrapper -->
+  </body>
+</html>

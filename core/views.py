@@ -1,23 +1,33 @@
 import os
 from io import BytesIO
 import pandas as pd
+from threading import Thread
 
-from rest_framework import generics, permissions, status, viewsets
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import permissions, status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated,SAFE_METHODS, BasePermission
+from rest_framework.permissions import (
+    IsAuthenticated,
+    SAFE_METHODS,
+    BasePermission,
+    IsAuthenticatedOrReadOnly,
+    AllowAny,
+)
 
+from django.core.mail import EmailMultiAlternatives
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.template.loader import render_to_string
 
-
-from .models import Product, CartItem, Order, OrderItem, Category
+from .models import Product, CartItem, Order, OrderItem, Category,BillingAddress
 from .serializers import (
     UserSerializer,
     ProductSerializer,
     CartItemSerializer,
     OrderSerializer,
     CategorySerializer,
+    BillingAddressSerializer,
 )
 
 User = get_user_model()
@@ -27,7 +37,6 @@ class IsAdminOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:  # GET, HEAD, OPTIONS
             return True
         return request.user.is_staff
-
 
 class IsAdminOrVendor(BasePermission):
     """
@@ -46,7 +55,6 @@ class IsAdminOrVendor(BasePermission):
             (request.user.is_superuser or request.user.role == 'vendor')
         )
 
-
 class IsCustomer(BasePermission):
     """
     Read for all authenticated users. Write only for customers.
@@ -57,7 +65,6 @@ class IsCustomer(BasePermission):
             return request.user.is_authenticated  # any authenticated user can read
         return request.user.is_authenticated and request.user.role == 'customer'
 
-
 # Register API
 class RegisterView(APIView):
     
@@ -65,6 +72,30 @@ class RegisterView(APIView):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            # Send welcome email
+            subject = "Registration Successful"
+            username = user.username
+            email = user.email
+
+            from_email = "abaranwal.it@gmail.com"
+            to_email = [email]
+
+            context = {"username": username, "role": user.role}
+            html_content = render_to_string("core/emails/registration.html", context)
+            text_content = "registration here!"
+
+            def send_otp_email():
+                try:
+                    email_message = EmailMultiAlternatives(
+                        subject, text_content, from_email, to_email
+                    )
+                    email_message.attach_alternative(html_content, "text/html")
+                    email_message.send(fail_silently = False)
+                except Exception as e:
+                    print("Error sending email:", e)
+
+            Thread(target = send_otp_email).start()
+
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -80,12 +111,18 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
-
+    
 # Product ViewSet (for vendors)
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAdminOrVendor]
+    permission_classes = [IsAuthenticatedOrReadOnly] 
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAdminOrVendor()]  # Only vendor or admin can modify
+        return super().get_permissions()  # Anyone can viewx    
 
     def perform_create(self, serializer):
         if not self.request.user.is_vendor():
@@ -93,10 +130,13 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer.save(vendor=self.request.user)
 
     def get_queryset(self):
-        if self.request.user.is_vendor():
-            return Product.objects.filter(vendor=self.request.user)
-        return Product.objects.all()
-
+        user = self.request.user
+        if user.is_authenticated:
+            if user.is_vendor():
+                return Product.objects.filter(vendor=user)
+            elif user.is_staff:
+                return Product.objects.all()
+        return Product.objects.filter(is_active=True)
 
 # Cart Views
 class CartItemView(APIView):
@@ -112,6 +152,8 @@ class CartItemView(APIView):
         quantity = request.data.get('quantity', 1)
         try:
             product = Product.objects.get(id=product_id)
+            if quantity is None or int(quantity) >= product.stock:
+                return Response({'error': f"Not enough stock for '{product.name}'. Available: {product.stock}, In Cart: {quantity}"}, status=400) 
             item, created = CartItem.objects.get_or_create(
                 customer=request.user,
                 product=product,
@@ -123,7 +165,6 @@ class CartItemView(APIView):
             return Response(CartItemSerializer(item).data)
         except Product.DoesNotExist:
             return Response({'error': 'Product not found.'}, status=404)
-
 
 # Checkout API
 class CheckoutView(APIView):
@@ -159,7 +200,6 @@ class CheckoutView(APIView):
             
         cart_items.delete()
         return Response({"success": f"Order #{order.id} placed!"})
-
 
 # Orders
 class CustomerOrderView(APIView):
@@ -243,3 +283,22 @@ class ProductSalesSummaryExportView(APIView):
 
         except Exception as e:
             return Response(f"Error generating report: {str(e)}", status=500)
+        
+# Billing Address
+class BillingAddressViewSet(viewsets.ModelViewSet):
+    serializer_class = BillingAddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return BillingAddress.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class CountryListAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        country_data = [{"code": code, "name": name} for code, name in list(countries)]
+        return Response(country_data)

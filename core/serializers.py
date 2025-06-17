@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Product, CartItem, Order, OrderItem, Category
+from .models import Product, CartItem, Order, OrderItem, Category, BillingAddress
 
 User = get_user_model()
 
@@ -32,10 +32,16 @@ class CategorySerializer(serializers.ModelSerializer):
 # Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
     vendor = serializers.ReadOnlyField(source='vendor.username')
+    category = serializers.SlugRelatedField(
+        read_only=True,
+        slug_field='name'  # use the `name` field of Category model
+    )
 
     class Meta:
         model = Product
         fields = ['id', 'name', 'description', 'price', 'image', 'vendor','stock', "category", 'is_active', 'created_at']
+
+        
 
 
 # Cart Item Serializer
@@ -76,3 +82,11 @@ class OrderSerializer(serializers.ModelSerializer):
         return sum([
             item.product.price * item.quantity for item in obj.items.all()
         ])
+    
+class BillingAddressSerializer(serializers.ModelSerializer):
+    country_display = serializers.CharField(source='get_country_display', read_only=True)
+
+    class Meta:
+        model = BillingAddress
+        fields = '__all__'
+        read_only_fields = ['user', 'created_at']
