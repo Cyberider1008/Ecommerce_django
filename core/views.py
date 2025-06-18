@@ -48,13 +48,8 @@ class IsAdminOrReadOnly(BasePermission):
         return request.user.is_staff
 
 class IsAdminOrVendor(BasePermission):
-    """
-    Allow only Admin and Vendor to add or modify products.
-    Everyone (authenticated or not) can read (GET, HEAD, OPTIONS).
-    """
-
+   
     def has_permission(self, request, view):
-        # Allow all safe methods (e.g. GET, HEAD, OPTIONS)
         if request.method in SAFE_METHODS:
             return True
 
@@ -65,10 +60,7 @@ class IsAdminOrVendor(BasePermission):
         )
 
 class IsCustomer(BasePermission):
-    """
-    Read for all authenticated users. Write only for customers.
-    """
-
+    
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return request.user.is_authenticated  # any authenticated user can read
@@ -121,7 +113,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     
-# Product ViewSet (for vendors)
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -136,7 +127,6 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         if not self.request.user.is_vendor():
             return Response({"error": "Only vendors can add products."}, status=403)
-        
         serializer.save(vendor=self.request.user)
 
     def get_queryset(self):
@@ -194,7 +184,6 @@ class CartItemView(APIView):
         return Response(CartItemSerializer(item).data)
 
     def delete(self, request):
-        """Remove item from cart"""
         product_id = request.data.get('product')
 
         try:

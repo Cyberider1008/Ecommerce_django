@@ -1,9 +1,15 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Product, CartItem, Order, OrderItem, Category, BillingAddress
+from .models import (
+    Product,
+    CartItem,
+    Order, 
+    OrderItem,
+    Category,
+    BillingAddress,
+)
 
 User = get_user_model()
-
 # User Serializer (for registration & profile)
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -12,8 +18,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'password', 'role']
 
-    def get_is_admin(self, obj):
-        return obj.is_superuser
+    # def get_is_admin(self, obj):
+    #     return obj.is_superuser
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -31,7 +37,6 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-
 # category Serializers
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,15 +47,30 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     vendor = serializers.ReadOnlyField(source='vendor.username')
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
-
     category_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'image', 'vendor','category_name','stock', "category", 'is_active', 'created_at']
-
+        fields = [
+    'id',
+    'name',
+    'description',
+    'price',
+    'image',
+    'vendor',
+    'category_name',
+    'stock',
+    'category',
+    'is_active',
+    'created_at',
+]
     def get_category_name(self, obj):
         return obj.category.name if obj.category else None
+    
+    def validate_category(self, value):
+        if not value.is_active:
+            raise serializers.ValidationError("Selected category is not active.")
+        return value
 
 
 # Cart Item Serializer
