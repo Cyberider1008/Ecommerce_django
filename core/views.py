@@ -136,6 +136,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         if not self.request.user.is_vendor():
             return Response({"error": "Only vendors can add products."}, status=403)
+        
         serializer.save(vendor=self.request.user)
 
     def get_queryset(self):

@@ -36,7 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'is_active']
 
 # Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
