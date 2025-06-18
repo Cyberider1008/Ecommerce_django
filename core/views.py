@@ -19,8 +19,17 @@ from django.core.mail import EmailMultiAlternatives
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.template.loader import render_to_string
+from django_countries import countries
 
-from .models import Product, CartItem, Order, OrderItem, Category,BillingAddress
+from .models import (
+    Product,
+    CartItem,
+    Order,
+    OrderItem,
+    Category,
+    BillingAddress
+)
+
 from .serializers import (
     UserSerializer,
     ProductSerializer,
@@ -300,5 +309,11 @@ class CountryListAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        country_data = [{"code": code, "name": name} for code, name in list(countries)]
+        country_data =[]
+        # Get all countries from django_countries
+        for code, name in list(countries):      
+            # Filter out countries with empty names
+            if name:
+                country_data.append({"code": code, "name": name})
+        # country_data = [{"code": code, "name": name} for code, name in list(countries)]
         return Response(country_data)

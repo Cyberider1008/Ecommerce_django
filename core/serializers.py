@@ -32,16 +32,16 @@ class CategorySerializer(serializers.ModelSerializer):
 # Product Serializer
 class ProductSerializer(serializers.ModelSerializer):
     vendor = serializers.ReadOnlyField(source='vendor.username')
-    category = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='name'  # use the `name` field of Category model
-    )
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())
+
+    category_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'image', 'vendor','stock', "category", 'is_active', 'created_at']
+        fields = ['id', 'name', 'description', 'price', 'image', 'vendor','category_name','stock', "category", 'is_active', 'created_at']
 
-        
+    def get_category_name(self, obj):
+        return obj.category.name if obj.category else None
 
 
 # Cart Item Serializer
