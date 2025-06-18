@@ -1,0 +1,75 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+.ENV/
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+
+# Media files
+/media/
+/staticfiles/
+/static/
+
+# Django migrations
+*/migrations/__pycache__/
+*/migrations/*.pyc
+*/migrations/*.pyo
+*/migrations/*.log
+*/migrations/*.sql
+*/migrations/*.sqlite3
+*/migrations/*.pickle
+
+# Ignore local settings
+local_settings.py
+settings_local.py
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Pylint
+pylint-report.txt
+pylint-global.rc
+
+# Build files
+build/
+dist/
+*.egg-info/
+
+
+# dotenv
+.env
+.env.*
+
