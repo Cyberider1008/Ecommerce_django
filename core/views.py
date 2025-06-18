@@ -174,6 +174,34 @@ class CartItemView(APIView):
             return Response(CartItemSerializer(item).data)
         except Product.DoesNotExist:
             return Response({'error': 'Product not found.'}, status=404)
+    
+    def put(self, request):
+        """Update quantity of an item"""
+        product_id = request.data.get('product')
+        quantity = int(request.data.get('quantity', 1))
+
+        try:
+            item = CartItem.objects.get(customer=request.user, product_id=product_id)
+        except CartItem.DoesNotExist:
+            return Response({'error': 'Cart item not found.'}, status=404)
+
+        if quantity < 1 or quantity > item.product.stock:
+            return Response({'error': f"Invalid quantity. Max available: {item.product.stock}"}, status=400)
+
+        item.quantity = quantity
+        item.save()
+        return Response(CartItemSerializer(item).data)
+
+    def delete(self, request):
+        """Remove item from cart"""
+        product_id = request.data.get('product')
+
+        try:
+            item = CartItem.objects.get(customer=request.user, product_id=product_id)
+            item.delete()
+            return Response({'message': 'Item removed from cart.'}, status=204)
+        except CartItem.DoesNotExist:
+            return Response({'error': 'Cart item not found.'}, status=404)
 
 # Checkout API
 class CheckoutView(APIView):
