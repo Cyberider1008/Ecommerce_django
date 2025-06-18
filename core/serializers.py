@@ -12,6 +12,15 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'password', 'role']
 
+    def get_is_admin(self, obj):
+        return obj.is_superuser
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.is_superuser:
+            data['role'] = 'admin'
+        return data    
+
     def create(self, validated_data):
         user = User.objects.create_user(
             username=validated_data['username'],

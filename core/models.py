@@ -11,13 +11,14 @@ class User(AbstractUser):
     ('customer', 'Customer'),
     )
 
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='customer')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES,blank=True, null=True)
 
     def is_vendor(self):
         return self.role == 'vendor'
 
-def is_customer(self):
-    return self.role == 'customer'
+    def is_customer(self):
+        return self.role == 'customer'
+   
    
     
 class Category(models.Model):
@@ -78,7 +79,6 @@ class OrderItem(models.Model):
 
 # Billing Address Model
 class BillingAddress(models.Model):
-   
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='billing_addresses')
     first_name = models.CharField(max_length=100)
