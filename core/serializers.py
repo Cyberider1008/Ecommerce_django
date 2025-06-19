@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+<<<<<<< HEAD
 from .models import (
     Product,
     CartItem,
@@ -8,6 +9,12 @@ from .models import (
     Category,
     BillingAddress,
 )
+<<<<<<< HEAD
+=======
+=======
+from .models import Product, CartItem, Order, OrderItem, Category, BillingAddress, Decimal
+>>>>>>> 0d7953e (get order summary)
+>>>>>>> parent of 4fa3109 (Merge pull request #1 from Cyberider1008/feature/getodersummary)
 
 User = get_user_model()
 # User Serializer (for registration & profile)
