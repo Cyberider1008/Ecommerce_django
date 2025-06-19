@@ -1,17 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-<<<<<<< HEAD
 from .models import (
     Product,
     CartItem,
     Order, 
     OrderItem,
     Category,
-    BillingAddress,
+    BillingAddress
 )
-=======
 from .models import Product, CartItem, Order, OrderItem, Category, BillingAddress, Decimal
->>>>>>> 0d7953e (get order summary)
 
 User = get_user_model()
 # User Serializer (for registration & profile)
