@@ -1,12 +1,20 @@
 import os
+import random
 from io import BytesIO
 import pandas as pd
 from threading import Thread
+
+from django.core.mail import EmailMultiAlternatives
+from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.template.loader import render_to_string
+from django_countries import countries
 
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import permissions, status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
 from rest_framework.permissions import (
     IsAuthenticated,
     SAFE_METHODS,
@@ -15,11 +23,6 @@ from rest_framework.permissions import (
     AllowAny,
 )
 
-from django.core.mail import EmailMultiAlternatives
-from django.contrib.auth import get_user_model
-from django.conf import settings
-from django.template.loader import render_to_string
-from django_countries import countries
 
 from .models import (
     Product,
@@ -27,7 +30,8 @@ from .models import (
     Order,
     OrderItem,
     Category,
-    BillingAddress
+    BillingAddress,
+    EmailOTP,
 )
 
 from .serializers import (
@@ -78,7 +82,7 @@ class RegisterView(APIView):
             username = user.username
             email = user.email
 
-            from_email = "abaranwal.it@gmail.com"
+            from_email = "noreply.it@gmail.com"
             to_email = [email]
 
             context = {"username": username, "role": user.role}
@@ -100,6 +104,60 @@ class RegisterView(APIView):
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class SendOTPAPIView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        otp = random.randint(10000,99999)
+        user = User.objects.get(username = username)
+
+        if user:
+            
+            EmailOTP.objects.create(username=username, otp = otp)
+            
+            subject = "Send OTP Successful"
+            
+            from_email = "noreply.it@gmail.com"
+            to_email = [user.email]
+
+            context = {"username": username, "otp":otp}
+            html_content = render_to_string("core/emails/otp.html", context)
+            text_content = "OTP here!"
+
+            def send_otp_email():
+                try:
+                    email_message = EmailMultiAlternatives(
+                        subject, text_content, from_email, to_email
+                    )
+                    email_message.attach_alternative(html_content, "text/html")
+                    email_message.send(fail_silently = False)
+                except Exception as e:
+                    print("Error sending email:", e)
+
+            Thread(target = send_otp_email).start()
+
+        return Response({"message" : "Otp send "})
+class ResetPasswordAPIView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        otp = request.data.get('otp')
+        new_password = request.data.get('new_password')
+
+        try:
+            otp_obj = EmailOTP.objects.filter(username=username, otp=otp).latest('created_at')
+            if  otp_obj.is_expired():
+                return Response({'error': 'OTP expired'}, status=400)
+            
+            user = User.objects.get(username=username)
+            user.set_password(new_password)
+            user.save()
+
+            # Delete used OTP
+            otp_obj.delete()
+
+            return Response({'message': 'Password reset successfully'}, status=200)
+
+        except (EmailOTP.DoesNotExist, User.DoesNotExist):
+            return Response({'error': 'Invalid request'}, status=400)
 # Authenticated User Info
 class UserDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -254,6 +312,30 @@ class VendorOrderView(APIView):
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)  
 
+# Billing Address
+class BillingAddressViewSet(viewsets.ModelViewSet):
+    serializer_class = BillingAddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return BillingAddress.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class CountryListAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        country_data =[]
+        # Get all countries from django_countries
+        for code, name in list(countries):      
+            # Filter out countries with empty names
+            if name:
+                country_data.append({"code": code, "name": name})
+        # country_data = [{"code": code, "name": name} for code, name in list(countries)]
+        return Response(country_data)
+    
 class ProductSalesSummaryExportView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -311,27 +393,3 @@ class ProductSalesSummaryExportView(APIView):
         except Exception as e:
             return Response(f"Error generating report: {str(e)}", status=500)
         
-# Billing Address
-class BillingAddressViewSet(viewsets.ModelViewSet):
-    serializer_class = BillingAddressSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return BillingAddress.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class CountryListAPIView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        country_data =[]
-        # Get all countries from django_countries
-        for code, name in list(countries):      
-            # Filter out countries with empty names
-            if name:
-                country_data.append({"code": code, "name": name})
-        # country_data = [{"code": code, "name": name} for code, name in list(countries)]
-        return Response(country_data)

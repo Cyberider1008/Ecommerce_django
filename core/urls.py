@@ -16,7 +16,9 @@ from .views import (
     CategoryViewSet,
     ProductSalesSummaryExportView,
     BillingAddressViewSet,
-    CountryListAPIView
+    CountryListAPIView,
+    SendOTPAPIView,
+    ResetPasswordAPIView,
 )
 
 router = DefaultRouter()
@@ -31,6 +33,10 @@ urlpatterns = [
     # Auth & User
     path('register/', RegisterView.as_view(), name='register'),
     path('user/', UserDetailView.as_view(), name='user-detail'),
+
+    #Reset password 
+    path('send-otp/', SendOTPAPIView.as_view(), name= 'send-otp'),
+    path('reset-password/', ResetPasswordAPIView.as_view(), name= 'send-otp'),
 
     # JWT Token
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

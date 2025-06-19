@@ -1,9 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-from django_countries.fields import CountryField
-
 from datetime import timedelta
+from django_countries.fields import CountryField
+from django.contrib.auth.models import AbstractUser
+
 # Custom User with roles
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -18,8 +18,18 @@ class User(AbstractUser):
 
     def is_customer(self):
         return self.role == 'customer'
-   
-   
+
+# Temp OTP Model
+class EmailOTP(models.Model):
+    username = models.CharField(max_length=20)
+    otp =  models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    data = models.JSONField(blank=True, null=True)
+
+      
+    
+    def is_expired(self):
+        return self.created_at + timedelta(minutes=10) < timezone.now()
     
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
