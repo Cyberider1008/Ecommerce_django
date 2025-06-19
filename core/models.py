@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django_countries.fields import CountryField
+from decimal import Decimal
 
 from datetime import timedelta
 # Custom User with roles
@@ -18,9 +19,8 @@ class User(AbstractUser):
 
     def is_customer(self):
         return self.role == 'customer'
-   
-   
     
+
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
@@ -29,6 +29,10 @@ class Category(models.Model):
         return self.name
 
 
+
+#password reset token model
+
+# class PasswordResetToken(models.Model):
 # Product Model
 class Product(models.Model):
     vendor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'vendor'})
@@ -37,7 +41,7 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    stock = models.PositiveIntegerField(default=0)  # new field
+    stock = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

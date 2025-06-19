@@ -94,7 +94,6 @@ class RegisterView(APIView):
                     email_message.send(fail_silently = False)
                 except Exception as e:
                     print("Error sending email:", e)
-
             Thread(target = send_otp_email).start()
 
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
