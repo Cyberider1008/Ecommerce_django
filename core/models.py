@@ -12,6 +12,7 @@ class User(AbstractUser):
     )
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES,blank=True, null=True)
+    
 
     def is_vendor(self):
         return self.role == 'vendor'

@@ -19,6 +19,7 @@ from .views import (
     CountryListAPIView,
     SendOTPAPIView,
     ResetPasswordAPIView,
+    VerifyOTP,
 )
 
 router = DefaultRouter()
@@ -35,8 +36,9 @@ urlpatterns = [
     path('user/', UserDetailView.as_view(), name='user-detail'),
 
     #Reset password 
-    path('send-otp/', SendOTPAPIView.as_view(), name= 'send-otp'),
-    path('reset-password/', ResetPasswordAPIView.as_view(), name= 'send-otp'),
+    path('send-otp/', SendOTPAPIView.as_view(), name='forget-password'),
+    path('verify-otp/', VerifyOTP.as_view(), name='verify-otp'),
+    path('reset-password/', ResetPasswordAPIView.as_view(), name='reset-password'),
 
     # JWT Token
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

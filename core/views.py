@@ -105,59 +105,90 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class SendOTPAPIView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
-        username = request.data.get('username')
-        otp = random.randint(10000,99999)
-        user = User.objects.get(username = username)
+        
+        email = request.data.get('email')
+        
+        user = User.objects.filter(email=email).first()
+       
+        if not user:
+            print("hello")
+            return Response({"error": "User not 1found"}, status=404)
 
-        if user:
-            
-            EmailOTP.objects.create(username=username, otp = otp)
-            
-            subject = "Send OTP Successful"
-            
-            from_email = "noreply.it@gmail.com"
-            to_email = [user.email]
+        otp = random.randint(10000, 99999)
+        username = user.username
+        request.session['username'] = username
 
-            context = {"username": username, "otp":otp}
-            html_content = render_to_string("core/emails/otp.html", context)
-            text_content = "OTP here!"
+        EmailOTP.objects.create(username=username, otp=otp)
 
-            def send_otp_email():
-                try:
-                    email_message = EmailMultiAlternatives(
-                        subject, text_content, from_email, to_email
-                    )
-                    email_message.attach_alternative(html_content, "text/html")
-                    email_message.send(fail_silently = False)
-                except Exception as e:
-                    print("Error sending email:", e)
+        subject = "Send OTP Successful"
+        from_email = "noreply.it@gmail.com"
+        to_email = [user.email]
+        context = {"username": username, "otp": otp}
+        html_content = render_to_string("core/emails/otp.html", context)
 
-            Thread(target = send_otp_email).start()
+        def send_otp_email():
+            try:
+                email_message = EmailMultiAlternatives(subject, "OTP here!", from_email, to_email)
+                email_message.attach_alternative(html_content, "text/html")
+                email_message.send(fail_silently=False)
+            except Exception as e:
+                print("Error sending email:", e)
 
-        return Response({"message" : "Otp send "})
-class ResetPasswordAPIView(APIView):
+        Thread(target=send_otp_email).start()
+
+        return Response({"message": "OTP sent successfully"})
+
+class VerifyOTP(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
-        username = request.data.get('username')
         otp = request.data.get('otp')
-        new_password = request.data.get('new_password')
+        username = request.session.get('username')
+
+        if not username or not otp:
+            return Response({"error": "OTP and session required"}, status=400)
 
         try:
-            otp_obj = EmailOTP.objects.filter(username=username, otp=otp).latest('created_at')
-            if  otp_obj.is_expired():
-                return Response({'error': 'OTP expired'}, status=400)
             
+            otp_obj = EmailOTP.objects.filter(username=username, otp=otp).latest('created_at')
+
+            if otp_obj.is_expired():
+                return Response({"error": "OTP expired"}, status=400)
+
+            request.session['otp_verified'] = True
+            return Response({"message": "OTP verified successfully"})
+
+        except (User.DoesNotExist, EmailOTP.DoesNotExist):
+            return Response({"error": "Invalid OTP or session"}, status=400)
+        
+
+class ResetPasswordAPIView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        username = request.session.get('username')
+        otp_verified = request.session.get('otp_verified', False)
+        new_password = request.data.get('new_password')
+
+        if not username or not otp_verified:
+            return Response({'error': 'OTP verification required'}, status=400)
+
+        try:
             user = User.objects.get(username=username)
             user.set_password(new_password)
             user.save()
 
-            # Delete used OTP
-            otp_obj.delete()
+            # Clean session & delete OTPs
+            EmailOTP.objects.filter(username=username).delete()
+            request.session.flush()  # clear session securely
 
             return Response({'message': 'Password reset successfully'}, status=200)
 
-        except (EmailOTP.DoesNotExist, User.DoesNotExist):
-            return Response({'error': 'Invalid request'}, status=400)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=400)
+        
+
+
 # Authenticated User Info
 class UserDetailView(APIView):
     permission_classes = [IsAuthenticated]
