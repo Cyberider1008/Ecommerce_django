@@ -20,6 +20,7 @@ from .views import (
     SendOTPAPIView,
     ResetPasswordAPIView,
     VerifyOTP,
+    OrderSummaryView,
 )
 
 router = DefaultRouter()
@@ -49,6 +50,9 @@ urlpatterns = [
 
     # Checkout
     path('checkout/', CheckoutView.as_view(), name='checkout'),
+
+    # Order Summary
+    path('order/summary/', OrderSummaryView.as_view(), name='order-summary'),
 
     # Orders
     path('orders/', CustomerOrderView.as_view(), name='customer-orders'),

@@ -10,6 +10,7 @@ from .models import (
 )
 
 from .models import Product, CartItem, Order, OrderItem, Category, BillingAddress
+from decimal import Decimal
 
 User = get_user_model()
 # User Serializer (for registration & profile)
@@ -100,19 +101,59 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 # Order Serializer
-class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
-    total_amount = serializers.SerializerMethodField()
-    customer = serializers.StringRelatedField(source='customer.username', read_only=True)
+# class OrderSerializer(serializers.ModelSerializer):
+#     items = OrderItemSerializer(many=True, read_only=True)
+#     total_amount = serializers.SerializerMethodField()
+#     customer = serializers.StringRelatedField(source='customer.username', read_only=True)
 
+#     class Meta:
+#         model = Order
+#         fields = ['id', 'customer', 'ordered_at', 'is_paid', 'items','total_amount']
+        
+#     def get_total_amount(self, obj):
+#         return sum([
+#             item.product.price * item.quantity for item in obj.items.all()
+#         ])
+
+# aniket here
+class OrderSerializer(serializers.ModelSerializer):
+    subtotal_amount = serializers.SerializerMethodField()
+    total_tax = serializers.SerializerMethodField()
+    final_total = serializers.SerializerMethodField()
+    products = serializers.SerializerMethodField()
+    customer = serializers.StringRelatedField(source='customer.username', read_only=True)
+ 
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'ordered_at', 'is_paid', 'items','total_amount']
-        
-    def get_total_amount(self, obj):
-        return sum([
-            item.product.price * item.quantity for item in obj.items.all()
-        ])
+        fields = [
+            'id', 'customer', 'ordered_at', 'is_paid',
+            'products',
+            'subtotal_amount', 'total_tax', 'final_total'
+        ]
+ 
+    def get_products(self, obj):
+        return [
+            {
+                "product_name": item.product.name,
+                "image": item.product.image.url if item.product.image else None,
+                "quantity": item.quantity,
+                "price": float(item.product.price)  
+            }
+            for item in obj.items.all()
+        ]
+ 
+    def get_subtotal_amount(self, obj):
+        return sum(item.product.price * item.quantity for item in obj.items.all())
+ 
+    def get_total_tax(self, obj):
+        subtotal = self.get_subtotal_amount(obj)
+        return float(round(Decimal(subtotal) * Decimal('0.10'), 2))
+ 
+    def get_final_total(self, obj):
+        subtotal = Decimal(self.get_subtotal_amount(obj))
+        tax = Decimal(self.get_total_tax(obj))
+        return float(round(subtotal + tax, 2))
+    
     
 class BillingAddressSerializer(serializers.ModelSerializer):
     country_display = serializers.CharField(source='get_country_display', read_only=True)

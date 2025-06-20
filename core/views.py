@@ -329,6 +329,24 @@ class CustomerOrderView(APIView):
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class OrderSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+ 
+    def get(self, request):
+        try:
+            # Get latest unpaid order for current customer
+            order = Order.objects.filter(customer=request.user).order_by('-ordered_at').first()
+ 
+            if not order:
+                return Response({"detail": "No recent orders found."}, status=204)
+ 
+            serializer = OrderSerializer(order)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+ 
+
 class VendorOrderView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrVendor]
 
