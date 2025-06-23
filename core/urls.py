@@ -60,5 +60,5 @@ urlpatterns = [
     path('vendor/download-report/', ProductSalesSummaryExportView.as_view(), name='vendor-report'),
     path('countries/', CountryListAPIView.as_view(), name='country-list'),
 
-    #search
+    
 ]
